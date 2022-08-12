@@ -31,28 +31,26 @@ dark_green = "#228B22"
 
 good_morning_template = \
     """
-    日期：{{date.DATA}}
+    {{date.DATA}}
     
     保安陈和倩公主在一起的第{{together_days.DATA}}天
     
-    杭州今日天气：
-    白天{{hz_day_ww.DATA}}，晚上{{hz_night_ww.DATA}}，最高{{hz_high_temp.DATA}}度，最低{{hz_low_temp.DATA}}度
+    距离倩公主生日还有{{princess_next_birthday.DATA}}天
     
-    天长今日天气：
-    白天{{tc_day_ww.DATA}}，晚上{{tc_night_ww.DATA}}，最高{{tc_high_temp.DATA}}度，最低{{tc_low_temp.DATA}}度
+    杭州今天白天{{hz_day_ww.DATA}}，晚上{{hz_night_ww.DATA}}，最高{{hz_high_temp.DATA}}度，最低{{hz_low_temp.DATA}}度
+    
+    天长今天白天{{tc_day_ww.DATA}}，晚上{{tc_night_ww.DATA}}，最高{{tc_high_temp.DATA}}度，最低{{tc_low_temp.DATA}}度
     
     油王情话：{{love_declaration.DATA}}
     """
 
 good_night_template = \
     """
-    日期：{{date.DATA}}
+    {{date.DATA}}
     
-    杭州明日天气：
-    白天{{hz_day_ww.DATA}}，晚上{{hz_night_ww.DATA}}，最高{{hz_high_temp.DATA}}度，最低{{hz_low_temp.DATA}}度
+    杭州明天白天{{hz_day_ww.DATA}}，晚上{{hz_night_ww.DATA}}，最高{{hz_high_temp.DATA}}度，最低{{hz_low_temp.DATA}}度
 
-    天长明日天气：
-    白天{{tc_day_ww.DATA}}，晚上{{tc_night_ww.DATA}}，最高{{tc_high_temp.DATA}}度，最低{{tc_low_temp.DATA}}度
+    天长明天白天{{tc_day_ww.DATA}}，晚上{{tc_night_ww.DATA}}，最高{{tc_high_temp.DATA}}度，最低{{tc_low_temp.DATA}}度
 
     保安鸡汤：{{everyday_quote.DATA}}
     """
@@ -237,6 +235,9 @@ class ServePrincess(object):
         raise NotImplementedError
 
     def ww2color(self):
+        raise NotImplementedError
+
+    def daily_en_words(self):
         raise NotImplementedError
 
     def brain_twists(self):
