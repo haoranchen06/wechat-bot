@@ -10,6 +10,7 @@ import urllib
 # import urllib3
 import hashlib
 import schedule
+from constants import *
 
 
 wechat_default_blue = "#173177"
@@ -116,10 +117,10 @@ def obj2dict(obj):
 
 class BaiduApi(object):
     def __init__(self):
-        self.ak = "PmzkUFQ7R0ru0fcKexpFCbrh8W2HeP4E"
-        self.sk = "zLeDXejBo6VAaZYe9yOx1uv0NA4doXu7"
-        self.prefix = "https://"
-        self.host = "api.map.baidu.com"
+        self.ak = bd_ak
+        self.sk = bd_sk
+        self.prefix = bd_prefix
+        self.host = bd_host
 
     def generate_sn(self, query_str):
         # query_str = '/geocoder/v2/?address=百度大厦&output=json&ak=yourak'
@@ -141,7 +142,7 @@ class BaiduApi(object):
 
 class TianAPI(object):
     def __init__(self):
-        self.APIKEY = "1fc2c216b359acde5d77390874bc21bc"
+        self.APIKEY = tian_APIKEY
 
     def caihongpi_index(self):
         url = f"http://api.tianapi.com/caihongpi/index?key={self.APIKEY}"
@@ -160,12 +161,12 @@ class TianAPI(object):
 
 class WechatApi(object):
     def __init__(self):
-        self.app_id = "wxb9ee3f7deaaf1370"
-        self.app_secret = "fc7584d7ce6bdc98c4a9df7506abdfef"
-        self.princess_open_id = "oiF8y5_yg3E5VHqv9wZpfUgWVZ3w"
-        self.guard_open_id = "oiF8y56RQyVg_ohketDv0wyKd7YA"
-        self.good_morning_tpl_id = "lkef1PfVikUcODKmpOR-UXzlyLIUSYe8-kOlrnAM0o0"
-        self.good_night_tpl_id = "zCMzTf4IpGqsct68DgPPrxreNfA5Rt_dgMt9caI7xAs"
+        self.app_id = wc_app_id
+        self.app_secret = wc_app_secret
+        self.princess_open_id = wc_princess_open_id
+        self.guard_open_id = wc_guard_open_id
+        self.good_morning_tpl_id = wc_good_morning_tpl_id
+        self.good_night_tpl_id = wc_good_night_tpl_id
 
     @property
     def access_token(self):
