@@ -11,23 +11,8 @@ import urllib
 import hashlib
 import schedule
 from constants import *
-
-
-wechat_default_blue = "#173177"
-white = "#FFFFFF"
-black = "#000000"
-red = "#FF4500"
-dark_red = "#B22222"
-light_red = "#FA8072"
-pink = "#FFC0CB"
-purple = "#A020F0"
-blue = "#4169E1"
-dark_blue = "#082E54"
-yellow = "#FFFF00"
-rose = "#FF3300"
-orange = "#FF6100"
-green = "#00FF00"
-dark_green = "#228B22"
+import random
+import re
 
 
 good_morning_template = \
@@ -42,6 +27,8 @@ good_morning_template = \
     
     天长今天白天{{tc_day_ww.DATA}}，晚上{{tc_night_ww.DATA}}，最高{{tc_high_temp.DATA}}度，最低{{tc_low_temp.DATA}}度
     
+    脑筋急转弯：{{brain_twists.DATA}}
+    
     油王情话：{{love_declaration.DATA}}
     """
 
@@ -50,9 +37,11 @@ good_night_template = \
     {{date.DATA}}
     
     杭州明天白天{{hz_day_ww.DATA}}，晚上{{hz_night_ww.DATA}}，最高{{hz_high_temp.DATA}}度，最低{{hz_low_temp.DATA}}度
-
+    
     天长明天白天{{tc_day_ww.DATA}}，晚上{{tc_night_ww.DATA}}，最高{{tc_high_temp.DATA}}度，最低{{tc_low_temp.DATA}}度
-
+    
+    脑筋急转弯答案：{{brain_twists_answer.DATA}}
+    
     保安鸡汤：{{everyday_quote.DATA}}
     """
 
@@ -64,10 +53,11 @@ class MTSDataElement(object):
 
 
 class GoodMorningTemplateData(object):
-    def __init__(self, date, together_days, hz_day_ww, hz_night_ww, hz_high_temp, hz_low_temp,
-                 tc_day_ww, tc_night_ww, tc_high_temp, tc_low_temp, love_declaration):
+    def __init__(self, date, together_days, princess_next_birthday, hz_day_ww, hz_night_ww, hz_high_temp, hz_low_temp,
+                 tc_day_ww, tc_night_ww, tc_high_temp, tc_low_temp, brain_twists, love_declaration):
         self.date = date
         self.together_days = together_days
+        self.princess_next_birthday = princess_next_birthday
         self.hz_day_ww = hz_day_ww
         self.hz_night_ww = hz_night_ww
         self.hz_high_temp = hz_high_temp
@@ -76,12 +66,13 @@ class GoodMorningTemplateData(object):
         self.tc_night_ww = tc_night_ww
         self.tc_high_temp = tc_high_temp
         self.tc_low_temp = tc_low_temp
+        self.brain_twists = brain_twists
         self.love_declaration = love_declaration
 
 
 class GoodNightTemplateData(object):
     def __init__(self, date, hz_day_ww, hz_night_ww, hz_high_temp, hz_low_temp,
-                 tc_day_ww, tc_night_ww, tc_high_temp, tc_low_temp, everyday_quote):
+                 tc_day_ww, tc_night_ww, tc_high_temp, tc_low_temp, brain_twists_answer, everyday_quote):
         self.date = date
         self.hz_day_ww = hz_day_ww
         self.hz_night_ww = hz_night_ww
@@ -91,6 +82,7 @@ class GoodNightTemplateData(object):
         self.tc_night_ww = tc_night_ww
         self.tc_high_temp = tc_high_temp
         self.tc_low_temp = tc_low_temp
+        self.brain_twists_answer = brain_twists_answer
         self.everyday_quote = everyday_quote
 
 
@@ -158,6 +150,20 @@ class TianAPI(object):
         raw_text = json.loads(rsp.text)
         return raw_text
 
+    def naowan_index(self):
+        url = f"http://api.tianapi.com/naowan/index?key={self.APIKEY}&num=1"
+        headers = {"Content-Type": "application/x-www-form-urlencoded"}
+        rsp = requests.get(url, headers=headers)
+        raw_text = json.loads(rsp.text)
+        return raw_text
+
+    def enwords_index(self, word):
+        url = f"http://api.tianapi.com/enwords/index?key={self.APIKEY}&word={word}"
+        headers = {"Content-Type": "application/x-www-form-urlencoded"}
+        rsp = requests.get(url, headers=headers)
+        raw_text = json.loads(rsp.text)
+        return raw_text
+
 
 class WechatApi(object):
     def __init__(self):
@@ -167,6 +173,7 @@ class WechatApi(object):
         self.guard_open_id = wc_guard_open_id
         self.good_morning_tpl_id = wc_good_morning_tpl_id
         self.good_night_tpl_id = wc_good_night_tpl_id
+        self.daily_en_words_tpl_id = wc_daily_en_words_tpl_id
 
     @property
     def access_token(self):
@@ -216,8 +223,11 @@ class ServePrincess(object):
         self.tian_api = TianAPI()
         self.wechat_api = WechatApi()
         self.together_date = datetime.date(2022, 3, 4)
+        self.princess_birthday = datetime.date(1998, 3, 21)
         self.hz_district_id = 330100
         self.tc_district_id = 341181
+        self.bt_q = None
+        self.bt_a = None
 
     @property
     def cur_date(self):
@@ -232,17 +242,85 @@ class ServePrincess(object):
         residual = self.cur_date - self.together_date
         return residual.days + 1
 
-    def temp2color(self):
-        raise NotImplementedError
+    @property
+    def princess_next_birthday(self):
+        m = self.princess_birthday.month
+        d = self.princess_birthday.day
+        annual_date = datetime.date(int(strftime("%Y")), m, d)
+        residual = annual_date - self.cur_date
+        if residual.days < 0:
+            annual_date = datetime.date(int(strftime("%Y"))+1, m, d)
+            residual = annual_date - self.cur_date
+        return residual.days
 
-    def ww2color(self):
-        raise NotImplementedError
+    def temp2color(self, temp):
+        temp = max(min(temp, 40), 0)
+        red_weight = temp / 40
+        green_weight = 1 - abs(temp-20) / 20
+        blue_weight = 1 - red_weight
+        rgb = (255 * red_weight, 255 * green_weight, 255 * blue_weight)
+        color = self.rgb2hex(rgb)
+        return color
+
+    @staticmethod
+    def rgb2hex(rgb):
+        color = '#'
+        for i in rgb:
+            num = int(i)
+            color += str(hex(num))[-2:].replace('x', '0').upper()
+        return color
+
+    def ww2color(self, ww):
+        mappings = {
+            "晴": orange_red,
+            "云": grey,
+            "阴": grey,
+            "雨": blue,
+            "雪": light_blue,
+            "冰": light_blue,
+            "雾": grey,
+            "霜": light_blue,
+            "": wechat_default_blue,
+        }
+        for key, color in mappings.items():
+            if key in ww:
+                return color
 
     def daily_en_words(self):
-        raise NotImplementedError
+        template_id = self.wechat_api.daily_en_words_tpl_id
+        cet6_en_vocab = open("cet6_en_vocab.txt", "r").read().split('\n')
+        en_idx = int(open("en_idx.txt", "r").read())
+        value = ""
+        cnt = 0
+        try_times = 0
+        max_try_times = 100
+        while cnt < 5 and try_times < max_try_times:
+            try:
+                w = cet6_en_vocab[en_idx+try_times]
+                raw_text = self.tian_api.enwords_index(word=w)
+                content = raw_text["newslist"][0]["content"]
+                line = f"{w}\t{content}\n\n"
+                value += line
+                cnt += 1
+            except KeyError:
+                pass
+            finally:
+                try_times += 1
+        t = dict(value=value, color=dark_grey)
+        data = dict(daily_en_words=t)
+        self.wechat_api.message_template_send(touser=self.wechat_api.princess_open_id,
+                                              template_id=template_id, data=data)
+        self.wechat_api.message_template_send(touser=self.wechat_api.guard_open_id,
+                                              template_id=template_id, data=data)
+        with open("en_idx.txt", "w") as w:
+            w.write(str(en_idx+try_times))
 
-    def brain_twists(self):
-        raise NotImplementedError
+    def brain_twists_qa_pair(self):
+        raw_text = self.tian_api.naowan_index()
+        q = raw_text['newslist'][0]['quest']
+        a = raw_text['newslist'][0]['result']
+        self.bt_q = q
+        self.bt_a = a
 
     def get_weather(self, district_id=341181, data_type="all", next_days=0):
         raw_text = self.baidu_api.weather_v1(district_id=district_id, data_type=data_type)
@@ -254,17 +332,17 @@ class ServePrincess(object):
 
     def get_struct_weather(self, district_id=341181, data_type="all", next_days=0):
         day_ww, night_ww, high_temp, low_temp = self.get_weather(district_id, data_type, next_days)
-        day_ww = MTSDataElement(value=day_ww, color=light_red)
-        night_ww = MTSDataElement(value=night_ww, color=light_red)
-        high_temp = MTSDataElement(value=high_temp, color=light_red)
-        low_temp = MTSDataElement(value=low_temp, color=light_red)
+        day_ww = MTSDataElement(value=day_ww, color=self.ww2color(day_ww))
+        night_ww = MTSDataElement(value=night_ww, color=self.ww2color(night_ww))
+        high_temp = MTSDataElement(value=high_temp, color=self.temp2color(high_temp))
+        low_temp = MTSDataElement(value=low_temp, color=self.temp2color(low_temp))
         return day_ww, night_ww, high_temp, low_temp
 
     def get_struct_love_declaration(self):
         raw_text = self.tian_api.caihongpi_index()
         love_declaration = MTSDataElement(
             value=raw_text["newslist"][0]["content"],
-            color=light_red,
+            color=orange_yellow,
         )
         return love_declaration
 
@@ -274,14 +352,15 @@ class ServePrincess(object):
         note = raw_text["newslist"][0]["note"]
         everyday_quote = MTSDataElement(
             value=f"{content}\n{note}",
-            color=light_red,
+            color=orange_yellow,
         )
         return everyday_quote
 
     def good_morning(self):
         template_id = self.wechat_api.good_morning_tpl_id
         date = MTSDataElement(value=strftime("%Y-%m-%d %A %H:%M"), color=light_red)
-        together_days = MTSDataElement(value=self.together_days, color=light_red)
+        together_days = MTSDataElement(value=self.together_days, color=pink)
+        princess_next_birthday = MTSDataElement(value=self.princess_next_birthday, color=pink)
         hz_day_ww, hz_night_ww, hz_high_temp, hz_low_temp = self.get_struct_weather(
             district_id=self.hz_district_id,
             next_days=0
@@ -290,10 +369,13 @@ class ServePrincess(object):
             district_id=self.tc_district_id,
             next_days=0
         )
+        self.brain_twists_qa_pair()
+        brain_twists = MTSDataElement(value=self.bt_q, color=orange)
         love_declaration = self.get_struct_love_declaration()
         struct_data = GoodMorningTemplateData(
             date=date,
             together_days=together_days,
+            princess_next_birthday=princess_next_birthday,
             hz_day_ww=hz_day_ww,
             hz_night_ww=hz_night_ww,
             hz_high_temp=hz_high_temp,
@@ -302,6 +384,7 @@ class ServePrincess(object):
             tc_night_ww=tc_night_ww,
             tc_high_temp=tc_high_temp,
             tc_low_temp=tc_low_temp,
+            brain_twists=brain_twists,
             love_declaration=love_declaration,
         )
         data = obj2dict(struct_data)
@@ -321,6 +404,7 @@ class ServePrincess(object):
             district_id=self.tc_district_id,
             next_days=1
         )
+        brain_twists_answer = MTSDataElement(value=self.bt_a, color=orange)
         everyday_quote = self.get_struct_everyday_quote()
         struct_data = GoodNightTemplateData(
             date=date,
@@ -332,6 +416,7 @@ class ServePrincess(object):
             tc_night_ww=tc_night_ww,
             tc_high_temp=tc_high_temp,
             tc_low_temp=tc_low_temp,
+            brain_twists_answer=brain_twists_answer,
             everyday_quote=everyday_quote,
         )
         data = obj2dict(struct_data)
@@ -355,14 +440,14 @@ if __name__ == "__main__":
     serve_princess = ServePrincess()
     # serve_princess.good_morning()
     # serve_princess.good_night()
+    # serve_princess.daily_en_words()
 
     schedule.every().day.at("06:45").do(serve_princess.good_morning)
+    schedule.every().day.at("08:00").do(serve_princess.daily_en_words)
     schedule.every().day.at("22:30").do(serve_princess.good_night)
 
     while True:
         schedule.run_pending()
         sleep(1)
-
-
 
 

@@ -10,6 +10,27 @@
 import configparser
 
 
+wechat_default_blue = "#173177"
+white = "#FFFFFF"
+black = "#000000"
+red = "#FF3300"
+dark_red = "#B22222"
+light_red = "#FF4500"
+pink = "#FF3366"
+purple = "#A020F0"
+blue = "#0066FF"
+light_blue = "#00CCFF"
+dark_blue = "#000099"
+yellow = "#FFFF66"
+orange_yellow = "#FFCC00"
+rose = "#FF3300"
+orange = "#FF9900"
+orange_red = "#FF6600"
+green = "#00FF00"
+dark_green = "#228B22"
+grey = "#D3D3D3"
+dark_grey = "#A9A9A9"
+
 cp = configparser.ConfigParser()
 cp.read("config.ini")
 
@@ -26,5 +47,6 @@ wc_princess_open_id = cp["WECHAT_API"]["princess_open_id"]
 wc_guard_open_id = cp["WECHAT_API"]["guard_open_id"]
 wc_good_morning_tpl_id = cp["WECHAT_API"]["good_morning_tpl_id"]
 wc_good_night_tpl_id = cp["WECHAT_API"]["good_night_tpl_id"]
+wc_daily_en_words_tpl_id = cp["WECHAT_API"]["daily_en_words_tpl_id"]
 
 
