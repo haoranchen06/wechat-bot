@@ -288,8 +288,8 @@ class ServePrincess(object):
 
     def daily_en_words(self):
         template_id = self.wechat_api.daily_en_words_tpl_id
-        cet6_en_vocab = open("cet6_en_vocab.txt", "r").read().split('\n')
-        en_idx = int(open("en_idx.txt", "r").read())
+        cet6_en_vocab = open("daily_en/cet6_en_vocab.txt", "r").read().split('\n')
+        en_idx = int(open("daily_en/en_idx.txt", "r").read())
         value = ""
         cnt = 0
         try_times = 0
@@ -312,7 +312,7 @@ class ServePrincess(object):
                                               template_id=template_id, data=data)
         self.wechat_api.message_template_send(touser=self.wechat_api.guard_open_id,
                                               template_id=template_id, data=data)
-        with open("en_idx.txt", "w") as w:
+        with open("daily_en/en_idx.txt", "w") as w:
             w.write(str(en_idx+try_times))
 
     def brain_twists_qa_pair(self):

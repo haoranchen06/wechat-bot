@@ -32,7 +32,7 @@ grey = "#D3D3D3"
 dark_grey = "#A9A9A9"
 
 cp = configparser.ConfigParser()
-cp.read("config.ini")
+cp.read("configs/config.ini")
 
 bd_ak = cp["BAIDU_API"]["ak"]
 bd_sk = cp["BAIDU_API"]["sk"]
