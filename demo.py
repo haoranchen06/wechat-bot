@@ -270,7 +270,8 @@ class ServePrincess(object):
             color += str(hex(num))[-2:].replace('x', '0').upper()
         return color
 
-    def ww2color(self, ww):
+    @staticmethod
+    def ww2color(ww):
         mappings = {
             "晴": orange_red,
             "云": grey,
