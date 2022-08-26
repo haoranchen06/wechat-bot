@@ -107,6 +107,30 @@ def obj2dict(obj):
         return obj.__dict__
 
 
+def youdao_en2cn(word):
+    url = f"https://www.youdao.com/result?word={word}&lang=en"
+    data = requests.get(url).text
+    pos_pattern = r"<span class=\"pos\".*?>(.*?)</span>"
+    trans_pattern = r"<span class=\"trans\".*?>(.*?)</span>"
+    en_ex_pattern = r"<div class=\"sen-eng\".*?>(.*?)</div>"
+    cn_ex_pattern = r"<div class=\"sen-ch\".*?>(.*?)</div>"
+    pos = re.findall(pattern=pos_pattern, string=data)
+    trans = re.findall(pattern=trans_pattern, string=data)
+    en_ex = re.findall(pattern=en_ex_pattern, string=data)
+    cn_ex = re.findall(pattern=cn_ex_pattern, string=data)
+    trans_t = ""
+    for p, t in zip(pos, trans[:len(pos)]):
+        line = f"{p}\t{t}\n"
+        trans_t += line
+    ex_t = ""
+    for en, cn in zip(en_ex, cn_ex):
+        en = en.replace("<b>", "").replace("</b>", "")
+        line = f"{en}\n{cn}\n"
+        ex_t += line
+    ans = f"{word}\n\n{trans_t}\n{ex_t}"
+    return ans
+
+
 class BaiduApi(object):
     def __init__(self):
         self.ak = bd_ak
@@ -291,28 +315,24 @@ class ServePrincess(object):
         template_id = self.wechat_api.daily_en_words_tpl_id
         cet6_en_vocab = open("daily_en/cet6_en_vocab.txt", "r").read().split('\n')
         en_idx = int(open("daily_en/en_idx.txt", "r").read())
-        value = ""
         cnt = 0
         try_times = 0
         max_try_times = 100
         while cnt < 5 and try_times < max_try_times:
             try:
                 w = cet6_en_vocab[en_idx+try_times]
-                raw_text = self.tian_api.enwords_index(word=w)
-                content = raw_text["newslist"][0]["content"]
-                line = f"{w}\t{content}\n\n"
-                value += line
+                cur_trans = youdao_en2cn(word=w)
+                t = dict(value=cur_trans, color=orange_red)
+                data = dict(daily_en_words=t)
+                # self.wechat_api.message_template_send(touser=self.wechat_api.princess_open_id,
+                #                                       template_id=template_id, data=data)
+                self.wechat_api.message_template_send(touser=self.wechat_api.guard_open_id,
+                                                      template_id=template_id, data=data)
                 cnt += 1
-            except KeyError:
+            except Exception:
                 pass
             finally:
                 try_times += 1
-        t = dict(value=value, color=dark_grey)
-        data = dict(daily_en_words=t)
-        self.wechat_api.message_template_send(touser=self.wechat_api.princess_open_id,
-                                              template_id=template_id, data=data)
-        self.wechat_api.message_template_send(touser=self.wechat_api.guard_open_id,
-                                              template_id=template_id, data=data)
         with open("daily_en/en_idx.txt", "w") as w:
             w.write(str(en_idx+try_times))
 
@@ -389,8 +409,8 @@ class ServePrincess(object):
             love_declaration=love_declaration,
         )
         data = obj2dict(struct_data)
-        self.wechat_api.message_template_send(touser=self.wechat_api.princess_open_id,
-                                              template_id=template_id, data=data)
+        # self.wechat_api.message_template_send(touser=self.wechat_api.princess_open_id,
+        #                                       template_id=template_id, data=data)
         self.wechat_api.message_template_send(touser=self.wechat_api.guard_open_id,
                                               template_id=template_id, data=data)
 
@@ -421,8 +441,8 @@ class ServePrincess(object):
             everyday_quote=everyday_quote,
         )
         data = obj2dict(struct_data)
-        self.wechat_api.message_template_send(touser=self.wechat_api.princess_open_id,
-                                              template_id=template_id, data=data)
+        # self.wechat_api.message_template_send(touser=self.wechat_api.princess_open_id,
+        #                                       template_id=template_id, data=data)
         self.wechat_api.message_template_send(touser=self.wechat_api.guard_open_id,
                                               template_id=template_id, data=data)
 
@@ -441,14 +461,14 @@ if __name__ == "__main__":
     serve_princess = ServePrincess()
     # serve_princess.good_morning()
     # serve_princess.good_night()
-    # serve_princess.daily_en_words()
+    serve_princess.daily_en_words()
 
-    schedule.every().day.at("06:45").do(serve_princess.good_morning)
-    schedule.every().day.at("08:00").do(serve_princess.daily_en_words)
-    schedule.every().day.at("22:30").do(serve_princess.good_night)
+    # schedule.every().day.at("06:45").do(serve_princess.good_morning)
+    # schedule.every().day.at("08:00").do(serve_princess.daily_en_words)
+    # schedule.every().day.at("22:30").do(serve_princess.good_night)
 
-    while True:
-        schedule.run_pending()
-        sleep(1)
+    # while True:
+    #     schedule.run_pending()
+    #     sleep(1)
 
-
+    # a = youdao_en2cn("plan")
