@@ -125,9 +125,9 @@ def youdao_en2cn(word):
     ex_t = ""
     for en, cn in zip(en_ex, cn_ex):
         en = en.replace("<b>", "").replace("</b>", "")
-        line = f"{en}\n{cn}\n"
+        line = f"{en}\n{cn}\n\n"
         ex_t += line
-    ans = f"{word}\n\n{trans_t}\n{ex_t}"
+    ans = f"<strong>{word}</strong>\n\n{trans_t}\n{ex_t}"
     return ans
 
 
@@ -214,6 +214,23 @@ class WechatApi(object):
         rsp = requests.get(url=url)
         access_token = json.loads(rsp.text)["access_token"]
         return access_token
+
+    def media_upload(self, file_path, file_type):
+        url = f"https://api.weixin.qq.com/cgi-bin/media/upload?access_token={self.access_token}&type={file_type}"
+        files = [
+            ('media', (file_path, open(file_path, 'rb'), 'image/jpeg'))
+        ]
+        rsp = requests.post(url=url, files=files)
+        raw_text = json.loads(rsp.text)
+        return raw_text
+
+    def media_upload_news(self, **kwargs):
+        url = f"https://api.weixin.qq.com/cgi-bin/media/uploadnews?access_token={self.access_token}"
+        payloads = kwargs
+        headers = {"Content-type": "application/json", "charset": "utf-8"}
+        rsp = requests.post(url=url, json=payloads, headers=headers)
+        raw_text = json.loads(rsp.text)
+        return raw_text
     
     def message_mass_sendall(self, **kwargs):
         url = f"https://api.weixin.qq.com/cgi-bin/message/mass/sendall?access_token={self.access_token}"
@@ -298,12 +315,12 @@ class ServePrincess(object):
     def ww2color(ww):
         mappings = {
             "晴": orange_red,
-            "云": grey,
-            "阴": grey,
+            "云": dark_grey,
+            "阴": dark_grey,
             "雨": blue,
             "雪": light_blue,
             "冰": light_blue,
-            "雾": grey,
+            "雾": dark_grey,
             "霜": light_blue,
             "": wechat_default_blue,
         }
@@ -312,27 +329,57 @@ class ServePrincess(object):
                 return color
 
     def daily_en_words(self):
-        template_id = self.wechat_api.daily_en_words_tpl_id
+        """
+        TODO: article用html排版
+        TODO: 中文乱码
+        """
         cet6_en_vocab = open("daily_en/cet6_en_vocab.txt", "r").read().split('\n')
         en_idx = int(open("daily_en/en_idx.txt", "r").read())
+        trans_list = []
         cnt = 0
         try_times = 0
         max_try_times = 100
+        sep_line = f"{'-'*20}\n\n"
         while cnt < 5 and try_times < max_try_times:
             try:
                 w = cet6_en_vocab[en_idx+try_times]
                 cur_trans = youdao_en2cn(word=w)
-                t = dict(value=cur_trans, color=orange_red)
-                data = dict(daily_en_words=t)
-                # self.wechat_api.message_template_send(touser=self.wechat_api.princess_open_id,
-                #                                       template_id=template_id, data=data)
-                self.wechat_api.message_template_send(touser=self.wechat_api.guard_open_id,
-                                                      template_id=template_id, data=data)
+                trans_list.append(cur_trans)
                 cnt += 1
             except Exception:
                 pass
             finally:
                 try_times += 1
+
+        mu_rsp = self.wechat_api.media_upload(file_path="daily_en/en_pic_1.jpeg", file_type="image")
+        cur_article = {
+            "articles": [
+                {
+                    "thumb_media_id": mu_rsp["media_id"],
+                    "author": "保安陈",
+                    "title": "每日单词",
+                    # "content_source_url": "www.qq.com",
+                    "content": sep_line.join(trans_list),
+                    "digest": "正儿八经",
+                    "show_cover_pic": 1,
+                    "need_open_comment": 1,
+                    "only_fans_can_comment": 0
+                },
+            ]
+        }
+        mun_rsp = self.wechat_api.media_upload_news(**cur_article)
+        payloads = {
+            "touser": [
+                self.wechat_api.guard_open_id,
+                "xxx"
+            ],
+            "msgtype": "mpnews",
+            "mpnews": {
+                "media_id": mun_rsp["media_id"]
+            }
+        }
+        cur_rsp = self.wechat_api.message_mass_send(**payloads)
+        print(cur_rsp)
         with open("daily_en/en_idx.txt", "w") as w:
             w.write(str(en_idx+try_times))
 
@@ -448,8 +495,8 @@ class ServePrincess(object):
 
 
 if __name__ == "__main__":
-    # wechat_api = WechatApi()
-    # access_token = wechat_api.access_token
+    wechat_api = WechatApi()
+    access_token = wechat_api.access_token
 
     # baidu_api = BaiduApi()
     # tc_w = baidu_api.weather_v1(district_id=341181, data_type="all")
@@ -471,4 +518,4 @@ if __name__ == "__main__":
     #     schedule.run_pending()
     #     sleep(1)
 
-    # a = youdao_en2cn("plan")
+    a = youdao_en2cn("plan")
