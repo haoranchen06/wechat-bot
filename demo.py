@@ -118,17 +118,15 @@ def youdao_en2cn(word):
     trans = re.findall(pattern=trans_pattern, string=data)
     en_ex = re.findall(pattern=en_ex_pattern, string=data)
     cn_ex = re.findall(pattern=cn_ex_pattern, string=data)
-    trans_t = ""
+    trans_t = []
     for p, t in zip(pos, trans[:len(pos)]):
-        line = f"{p}\t{t}\n"
-        trans_t += line
-    ex_t = ""
+        line = f"{p} {t}"
+        trans_t.append(line)
+    ex_t = []
     for en, cn in zip(en_ex, cn_ex):
-        en = en.replace("<b>", "").replace("</b>", "")
-        line = f"{en}\n{cn}\n\n"
-        ex_t += line
-    ans = f"<strong>{word}</strong>\n\n{trans_t}\n{ex_t}"
-    return ans
+        line = f"{en} {cn}"
+        ex_t.append(line)
+    return word, trans_t, ex_t
 
 
 class BaiduApi(object):
@@ -227,8 +225,7 @@ class WechatApi(object):
     def media_upload_news(self, **kwargs):
         url = f"https://api.weixin.qq.com/cgi-bin/media/uploadnews?access_token={self.access_token}"
         payloads = kwargs
-        headers = {"Content-type": "application/json", "charset": "utf-8"}
-        rsp = requests.post(url=url, json=payloads, headers=headers)
+        rsp = requests.post(url=url, data=bytes(json.dumps(payloads, ensure_ascii=False), encoding="utf-8"))
         raw_text = json.loads(rsp.text)
         return raw_text
     
@@ -339,7 +336,6 @@ class ServePrincess(object):
         cnt = 0
         try_times = 0
         max_try_times = 100
-        sep_line = f"{'-'*20}\n\n"
         while cnt < 5 and try_times < max_try_times:
             try:
                 w = cet6_en_vocab[en_idx+try_times]
@@ -350,8 +346,18 @@ class ServePrincess(object):
                 pass
             finally:
                 try_times += 1
-
         mu_rsp = self.wechat_api.media_upload(file_path="daily_en/en_pic_1.jpeg", file_type="image")
+        with open("daily_en/en_learn_template.html", "r") as r:
+            en_learn_template = r.read()
+        full_body = ""
+        single_tpl = re.search(pattern=r"<body>([\s\S]*)</body>", string=en_learn_template).group(1)
+        for word, trans_t, ex_t in trans_list:
+            explain = "\n".join(f"<p>{trans}</p>" for trans in trans_t)
+            example = "\n".join(f"<p>{ex}</p>" for ex in ex_t)
+            full_body += single_tpl.format(word=word, explain=explain, example=example)
+        full_body = f"<body>\n{full_body}\n</body>"
+        en_learn_today = re.sub(pattern=r"<body>[\s\S]*</body>", repl=full_body, string=en_learn_template)
+        # print(en_learn_today)
         cur_article = {
             "articles": [
                 {
@@ -359,8 +365,8 @@ class ServePrincess(object):
                     "author": "保安陈",
                     "title": "每日单词",
                     # "content_source_url": "www.qq.com",
-                    "content": sep_line.join(trans_list),
-                    "digest": "正儿八经",
+                    "content": en_learn_today,
+                    "digest": "CET-6",
                     "show_cover_pic": 1,
                     "need_open_comment": 1,
                     "only_fans_can_comment": 0
@@ -371,7 +377,8 @@ class ServePrincess(object):
         payloads = {
             "touser": [
                 self.wechat_api.guard_open_id,
-                "xxx"
+                self.wechat_api.princess_open_id,
+                # "xxx",
             ],
             "msgtype": "mpnews",
             "mpnews": {
@@ -456,8 +463,8 @@ class ServePrincess(object):
             love_declaration=love_declaration,
         )
         data = obj2dict(struct_data)
-        # self.wechat_api.message_template_send(touser=self.wechat_api.princess_open_id,
-        #                                       template_id=template_id, data=data)
+        self.wechat_api.message_template_send(touser=self.wechat_api.princess_open_id,
+                                              template_id=template_id, data=data)
         self.wechat_api.message_template_send(touser=self.wechat_api.guard_open_id,
                                               template_id=template_id, data=data)
 
@@ -488,34 +495,36 @@ class ServePrincess(object):
             everyday_quote=everyday_quote,
         )
         data = obj2dict(struct_data)
-        # self.wechat_api.message_template_send(touser=self.wechat_api.princess_open_id,
-        #                                       template_id=template_id, data=data)
+        self.wechat_api.message_template_send(touser=self.wechat_api.princess_open_id,
+                                              template_id=template_id, data=data)
         self.wechat_api.message_template_send(touser=self.wechat_api.guard_open_id,
                                               template_id=template_id, data=data)
 
 
 if __name__ == "__main__":
-    wechat_api = WechatApi()
-    access_token = wechat_api.access_token
+    # wechat_api = WechatApi()
+    # access_token = wechat_api.access_token
 
     # baidu_api = BaiduApi()
     # tc_w = baidu_api.weather_v1(district_id=341181, data_type="all")
-    #
+
     # tian_api = TianAPI()
     # chp = tian_api.caihongpi_index()
     # ei = tian_api.everyday_index()
 
+    # a = youdao_en2cn("plan")
+
     serve_princess = ServePrincess()
     # serve_princess.good_morning()
     # serve_princess.good_night()
-    serve_princess.daily_en_words()
+    # serve_princess.daily_en_words()
 
-    # schedule.every().day.at("06:45").do(serve_princess.good_morning)
-    # schedule.every().day.at("08:00").do(serve_princess.daily_en_words)
-    # schedule.every().day.at("22:30").do(serve_princess.good_night)
+    schedule.every().day.at("06:45").do(serve_princess.good_morning)
+    schedule.every().day.at("08:00").do(serve_princess.daily_en_words)
+    schedule.every().day.at("22:30").do(serve_princess.good_night)
 
-    # while True:
-    #     schedule.run_pending()
-    #     sleep(1)
+    while True:
+        schedule.run_pending()
+        sleep(1)
 
-    a = youdao_en2cn("plan")
+
