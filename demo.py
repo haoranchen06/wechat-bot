@@ -107,26 +107,68 @@ def obj2dict(obj):
         return obj.__dict__
 
 
+class AttrDictPlus(dict):
+    def __init__(self, *args, **kwargs):
+        super(AttrDictPlus, self).__init__(*args, **kwargs)
+        self.__dict__ = self
+
+    def _set_attr(self, keys, value):
+        keys = keys.split('.')
+        if len(keys) == 1:
+            self.__setattr__(keys[0], value)
+        else:
+            self.__setattr__(keys[0], AttrDictPlus())
+            next_ = self.__getattribute__(keys[0])
+            assert isinstance(next_, AttrDictPlus)
+            next_._set_attr('.'.join(keys[1:]), value)
+
+    def _get_attr(self, keys):
+        keys = keys.split('.')
+        if len(keys) == 1:
+            return self.__getattribute__(keys[0])
+        else:
+            next_ = self.__getattribute__(keys[0])
+            assert isinstance(next_, AttrDictPlus)
+            return next_._get_attr('.'.join(keys[1:]))
+
+
+def _en_learn_format(func):
+
+    def wrapper(*args, **kwargs):
+        word, phone_t, trans_t, ex_t = func(*args, **kwargs)
+        word = f"""<p style="font-size: 30px"><strong>{word}</strong></p>"""
+        phone = "<span> </span>\n".join(f"<span>{l}</span>\n<span>{p}</span>\n" for l, p in zip(["英", "美"], phone_t[:2]))
+        explain = "\n".join(f"<p>{' '.join(pair)}</p>" for pair in trans_t)
+        example = "\n".join(f"<p>{' '.join(pair)}</p>" for pair in ex_t)
+        return word, phone, explain, example
+
+    return wrapper
+
+
+@_en_learn_format
 def youdao_en2cn(word):
     url = f"https://www.youdao.com/result?word={word}&lang=en"
     data = requests.get(url).text
     pos_pattern = r"<span class=\"pos\".*?>(.*?)</span>"
+    phone_pattern = r"<span class=\"phonetic\".*?>(.*?)</span>"
     trans_pattern = r"<span class=\"trans\".*?>(.*?)</span>"
     en_ex_pattern = r"<div class=\"sen-eng\".*?>(.*?)</div>"
     cn_ex_pattern = r"<div class=\"sen-ch\".*?>(.*?)</div>"
     pos = re.findall(pattern=pos_pattern, string=data)
+    phone = re.findall(pattern=phone_pattern, string=data)
     trans = re.findall(pattern=trans_pattern, string=data)
     en_ex = re.findall(pattern=en_ex_pattern, string=data)
     cn_ex = re.findall(pattern=cn_ex_pattern, string=data)
+    phone_t = phone
     trans_t = []
     for p, t in zip(pos, trans[:len(pos)]):
-        line = f"{p} {t}"
-        trans_t.append(line)
+        pair = (p, t)
+        trans_t.append(pair)
     ex_t = []
     for en, cn in zip(en_ex, cn_ex):
-        line = f"{en} {cn}"
-        ex_t.append(line)
-    return word, trans_t, ex_t
+        pair = (en, cn)
+        ex_t.append(pair)
+    return word, phone_t, trans_t, ex_t
 
 
 class BaiduApi(object):
@@ -213,10 +255,10 @@ class WechatApi(object):
         access_token = json.loads(rsp.text)["access_token"]
         return access_token
 
-    def media_upload(self, file_path, file_type):
+    def media_upload(self, file_path, file_cate="image/jpeg", file_type="image"):
         url = f"https://api.weixin.qq.com/cgi-bin/media/upload?access_token={self.access_token}&type={file_type}"
         files = [
-            ('media', (file_path, open(file_path, 'rb'), 'image/jpeg'))
+            ('media', (file_path, open(file_path, 'rb'), file_cate))
         ]
         rsp = requests.post(url=url, files=files)
         raw_text = json.loads(rsp.text)
@@ -351,40 +393,32 @@ class ServePrincess(object):
             en_learn_template = r.read()
         full_body = ""
         single_tpl = re.search(pattern=r"<body>([\s\S]*)</body>", string=en_learn_template).group(1)
-        for word, trans_t, ex_t in trans_list:
-            explain = "\n".join(f"<p>{trans}</p>" for trans in trans_t)
-            example = "\n".join(f"<p>{ex}</p>" for ex in ex_t)
-            full_body += single_tpl.format(word=word, explain=explain, example=example)
+        for word, phone, explain, example in trans_list:
+            full_body += single_tpl.format(word=word, phone=phone, explain=explain, example=example)
         full_body = f"<body>\n{full_body}\n</body>"
         en_learn_today = re.sub(pattern=r"<body>[\s\S]*</body>", repl=full_body, string=en_learn_template)
         # print(en_learn_today)
-        cur_article = {
-            "articles": [
-                {
-                    "thumb_media_id": mu_rsp["media_id"],
-                    "author": "保安陈",
-                    "title": "每日单词",
-                    # "content_source_url": "www.qq.com",
-                    "content": en_learn_today,
-                    "digest": "CET-6",
-                    "show_cover_pic": 1,
-                    "need_open_comment": 1,
-                    "only_fans_can_comment": 0
-                },
-            ]
-        }
+        atc = dict(
+            thumb_media_id=mu_rsp["media_id"],
+            author="保安陈",
+            title="每日单词",
+            content=en_learn_today,
+            digest="CET-6",
+            show_cover_pic=0,
+            need_open_comment=1,
+            only_fans_can_comment=0
+        )
+        cur_article = dict(articles=[atc])
         mun_rsp = self.wechat_api.media_upload_news(**cur_article)
-        payloads = {
-            "touser": [
+        payloads = dict(
+            touser=[
                 self.wechat_api.guard_open_id,
-                self.wechat_api.princess_open_id,
-                # "xxx",
+                # self.wechat_api.princess_open_id,
+                "xxx",
             ],
-            "msgtype": "mpnews",
-            "mpnews": {
-                "media_id": mun_rsp["media_id"]
-            }
-        }
+            msgtype="mpnews",
+            mpnews=dict(media_id=mun_rsp["media_id"])
+        )
         cur_rsp = self.wechat_api.message_mass_send(**payloads)
         print(cur_rsp)
         with open("daily_en/en_idx.txt", "w") as w:
@@ -517,14 +551,14 @@ if __name__ == "__main__":
     serve_princess = ServePrincess()
     # serve_princess.good_morning()
     # serve_princess.good_night()
-    # serve_princess.daily_en_words()
+    serve_princess.daily_en_words()
 
-    schedule.every().day.at("06:45").do(serve_princess.good_morning)
-    schedule.every().day.at("08:00").do(serve_princess.daily_en_words)
-    schedule.every().day.at("22:30").do(serve_princess.good_night)
-
-    while True:
-        schedule.run_pending()
-        sleep(1)
+    # schedule.every().day.at("06:45").do(serve_princess.good_morning)
+    # schedule.every().day.at("08:00").do(serve_princess.daily_en_words)
+    # schedule.every().day.at("22:30").do(serve_princess.good_night)
+    #
+    # while True:
+    #     schedule.run_pending()
+    #     sleep(1)
 
 
