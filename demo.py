@@ -413,8 +413,8 @@ class ServePrincess(object):
         payloads = dict(
             touser=[
                 self.wechat_api.guard_open_id,
-                # self.wechat_api.princess_open_id,
-                "xxx",
+                self.wechat_api.princess_open_id,
+                # "xxx",
             ],
             msgtype="mpnews",
             mpnews=dict(media_id=mun_rsp["media_id"])
@@ -551,14 +551,14 @@ if __name__ == "__main__":
     serve_princess = ServePrincess()
     # serve_princess.good_morning()
     # serve_princess.good_night()
-    serve_princess.daily_en_words()
+    # serve_princess.daily_en_words()
 
-    # schedule.every().day.at("06:45").do(serve_princess.good_morning)
-    # schedule.every().day.at("08:00").do(serve_princess.daily_en_words)
-    # schedule.every().day.at("22:30").do(serve_princess.good_night)
-    #
-    # while True:
-    #     schedule.run_pending()
-    #     sleep(1)
+    schedule.every().day.at("06:45").do(serve_princess.good_morning)
+    schedule.every().day.at("08:00").do(serve_princess.daily_en_words)
+    schedule.every().day.at("22:30").do(serve_princess.good_night)
+
+    while True:
+        schedule.run_pending()
+        sleep(1)
 
 
