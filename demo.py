@@ -306,8 +306,8 @@ class ServePrincess(object):
         self.princess_birthday = datetime.date(1998, 3, 21)
         self.hz_district_id = 330100
         self.tc_district_id = 341181
-        self.bt_q = None
-        self.bt_a = None
+        self.bt_q = serve_bt_q
+        self.bt_a = serve_bt_a
 
     @property
     def cur_date(self):
@@ -369,8 +369,7 @@ class ServePrincess(object):
 
     def daily_en_words(self):
         """
-        TODO: article用html排版
-        TODO: 中文乱码
+        TODO: 更优雅地使用html模板
         """
         cet6_en_vocab = open("daily_en/cet6_en_vocab.txt", "r").read().split('\n')
         en_idx = int(open("daily_en/en_idx.txt", "r").read())
@@ -449,8 +448,11 @@ class ServePrincess(object):
 
     def get_struct_love_declaration(self):
         raw_text = self.tian_api.caihongpi_index()
+        raw_text = raw_text["newslist"][0]["content"]
+        pattern = r"(X{2,})|(x{2,})|(你)"
+        ld = re.sub(pattern=pattern, repl=princess_nick_name, string=raw_text)
         love_declaration = MTSDataElement(
-            value=raw_text["newslist"][0]["content"],
+            value=ld,
             color=orange_yellow,
         )
         return love_declaration

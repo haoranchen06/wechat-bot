@@ -49,4 +49,8 @@ wc_good_morning_tpl_id = cp["WECHAT_API"]["good_morning_tpl_id"]
 wc_good_night_tpl_id = cp["WECHAT_API"]["good_night_tpl_id"]
 wc_daily_en_words_tpl_id = cp["WECHAT_API"]["daily_en_words_tpl_id"]
 
+serve_bt_q = cp["SERVE"]["bt_q"]
+serve_bt_a = cp["SERVE"]["bt_a"]
+princess_nick_name = cp["SERVE"]["princess_nick_name"]
+
 
