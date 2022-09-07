@@ -228,6 +228,13 @@ class TianAPI(object):
         raw_text = json.loads(rsp.text)
         return raw_text
 
+    def jiejiari_index(self, date):
+        url = f"http://api.tianapi.com/jiejiari/index?key={self.APIKEY}&date={date}"
+        headers = {"Content-Type": "application/x-www-form-urlencoded"}
+        rsp = requests.get(url, headers=headers)
+        raw_text = json.loads(rsp.text)
+        return raw_text
+
 
 class WechatApi(object):
     def __init__(self):
@@ -438,6 +445,18 @@ class ServePrincess(object):
         low_temp = raw_text["result"]["forecasts"][next_days]["low"]
         return day_ww, night_ww, high_temp, low_temp
 
+    def get_struct_date(self):
+        value = strftime("%Y-%m-%d")
+        raw_text = self.tian_api.jiejiari_index(date=value)
+        today_info = raw_text["newslist"][0]
+        value += f" {today_info['cnweekday']}"
+        if today_info["info"] == "双休日":
+            value += f"\n周末快乐呀"
+        elif today_info["info"] == "节假日":
+            value += f"\n{today_info['name']}假期快乐呀"
+        ans = MTSDataElement(value=value, color=light_red)
+        return ans
+
     def get_struct_weather(self, district_id=341181, data_type="all", next_days=0):
         day_ww, night_ww, high_temp, low_temp = self.get_weather(district_id, data_type, next_days)
         day_ww = MTSDataElement(value=day_ww, color=self.ww2color(day_ww))
@@ -449,7 +468,7 @@ class ServePrincess(object):
     def get_struct_love_declaration(self):
         raw_text = self.tian_api.caihongpi_index()
         raw_text = raw_text["newslist"][0]["content"]
-        pattern = r"(X{2,})|(x{2,})|(你)"
+        pattern = r"([Xx]{2,})|(你)"
         ld = re.sub(pattern=pattern, repl=princess_nick_name, string=raw_text)
         love_declaration = MTSDataElement(
             value=ld,
@@ -469,7 +488,7 @@ class ServePrincess(object):
 
     def good_morning(self):
         template_id = self.wechat_api.good_morning_tpl_id
-        date = MTSDataElement(value=strftime("%Y-%m-%d %A %H:%M"), color=light_red)
+        date = self.get_struct_date()
         together_days = MTSDataElement(value=self.together_days, color=pink)
         princess_next_birthday = MTSDataElement(value=self.princess_next_birthday, color=pink)
         hz_day_ww, hz_night_ww, hz_high_temp, hz_low_temp = self.get_struct_weather(
@@ -506,7 +525,7 @@ class ServePrincess(object):
 
     def good_night(self):
         template_id = self.wechat_api.good_night_tpl_id
-        date = MTSDataElement(value=strftime("%Y-%m-%d %A %H:%M"), color=light_red)
+        date = MTSDataElement(value=strftime("%Y-%m-%d %A"), color=light_red)
         hz_day_ww, hz_night_ww, hz_high_temp, hz_low_temp = self.get_struct_weather(
             district_id=self.hz_district_id,
             next_days=1
