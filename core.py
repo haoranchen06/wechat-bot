@@ -2,14 +2,13 @@
 
 import requests
 from functools import lru_cache
-from time import time, asctime, strftime, strptime, sleep
+from time import time, strftime
 import datetime
 import json
 import copy
 import urllib
 # import urllib3
 import hashlib
-import schedule
 from constants import *
 import random
 import re
@@ -132,7 +131,7 @@ class AttrDictPlus(dict):
             return next_._get_attr('.'.join(keys[1:]))
 
 
-def _en_learn_format(func):
+def _en_learn_html(func):
 
     def wrapper(*args, **kwargs):
         word, phone_t, trans_t, ex_t = func(*args, **kwargs)
@@ -145,7 +144,7 @@ def _en_learn_format(func):
     return wrapper
 
 
-@_en_learn_format
+@_en_learn_html
 def youdao_en2cn(word):
     url = f"https://www.youdao.com/result?word={word}&lang=en"
     data = requests.get(url).text
@@ -201,35 +200,31 @@ class TianAPI(object):
         self.APIKEY = tian_APIKEY
 
     def caihongpi_index(self):
-        url = f"http://api.tianapi.com/caihongpi/index?key={self.APIKEY}"
-        headers = {"Content-Type": "application/x-www-form-urlencoded"}
-        rsp = requests.get(url, headers=headers)
-        raw_text = json.loads(rsp.text)
-        return raw_text
+        url = f"http://api.tianapi.com/caihongpi/index"
+        return self._get(url=url)
 
     def everyday_index(self):
-        url = f"http://api.tianapi.com/everyday/index?key={self.APIKEY}"
-        headers = {"Content-Type": "application/x-www-form-urlencoded"}
-        rsp = requests.get(url, headers=headers)
-        raw_text = json.loads(rsp.text)
-        return raw_text
+        url = f"http://api.tianapi.com/everyday/index"
+        return self._get(url=url)
 
     def naowan_index(self):
-        url = f"http://api.tianapi.com/naowan/index?key={self.APIKEY}&num=1"
-        headers = {"Content-Type": "application/x-www-form-urlencoded"}
-        rsp = requests.get(url, headers=headers)
-        raw_text = json.loads(rsp.text)
-        return raw_text
+        url = f"http://api.tianapi.com/naowan/index"
+        return self._get(url=url, num=1)
 
     def enwords_index(self, word):
-        url = f"http://api.tianapi.com/enwords/index?key={self.APIKEY}&word={word}"
-        headers = {"Content-Type": "application/x-www-form-urlencoded"}
-        rsp = requests.get(url, headers=headers)
-        raw_text = json.loads(rsp.text)
-        return raw_text
+        url = f"http://api.tianapi.com/enwords/index"
+        return self._get(url=url, word=word)
 
     def jiejiari_index(self, date):
-        url = f"http://api.tianapi.com/jiejiari/index?key={self.APIKEY}&date={date}"
+        url = f"http://api.tianapi.com/jiejiari/index"
+        return self._get(url=url, date=date)
+
+    def robot_index(self, question):
+        url = f"http://api.tianapi.com/robot/index"
+        return self._get(url=url, question=question)
+
+    def _get(self, url, **kwargs):
+        url = f"{url}?key={self.APIKEY}" + "".join(f"&{k}={v}" for k, v in kwargs.items())
         headers = {"Content-Type": "application/x-www-form-urlencoded"}
         rsp = requests.get(url, headers=headers)
         raw_text = json.loads(rsp.text)
@@ -563,23 +558,18 @@ if __name__ == "__main__":
     # baidu_api = BaiduApi()
     # tc_w = baidu_api.weather_v1(district_id=341181, data_type="all")
 
-    # tian_api = TianAPI()
-    # chp = tian_api.caihongpi_index()
-    # ei = tian_api.everyday_index()
+    tian_api = TianAPI()
+    chp = tian_api.caihongpi_index()
+    ei = tian_api.everyday_index()
+    nw = tian_api.naowan_index()
+    jjr = tian_api.jiejiari_index(date="2022-9-13")
+    ri = tian_api.robot_index(question="how are you")
 
-    # a = youdao_en2cn("plan")
+    a = youdao_en2cn("plan")
 
-    serve_princess = ServePrincess()
+    # serve_princess = ServePrincess()
     # serve_princess.good_morning()
     # serve_princess.good_night()
     # serve_princess.daily_en_words()
-
-    schedule.every().day.at("06:45").do(serve_princess.good_morning)
-    schedule.every().day.at("08:00").do(serve_princess.daily_en_words)
-    schedule.every().day.at("22:30").do(serve_princess.good_night)
-
-    while True:
-        schedule.run_pending()
-        sleep(1)
 
 
