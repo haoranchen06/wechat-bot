@@ -9,8 +9,7 @@ import copy
 import urllib
 # import urllib3
 import hashlib
-from constants import *
-import random
+from configs.constants import *
 import re
 
 
@@ -563,7 +562,7 @@ if __name__ == "__main__":
     ei = tian_api.everyday_index()
     nw = tian_api.naowan_index()
     jjr = tian_api.jiejiari_index(date="2022-9-13")
-    ri = tian_api.robot_index(question="how are you")
+    ri = tian_api.robot_index(question="今天天气如何")
 
     a = youdao_en2cn("plan")
 
