@@ -1,39 +1,49 @@
-**deem**
+**dolphin**
 
-> 释义
+英 / ˈdɒlfɪn / 美 / ˈdɑːlfɪn /
 
-v.	认为，相信
+> **释义**
 
+n. 海豚
 
+n. （Dolphin）人名；（英）多尔芬
 
-> 例句
+ 
 
-They deem travel an important part of their life. 他们认为旅行是他们生活中重要的一部分。
+> **例句**
 
-I deem it an honour to accept your invitation. 承蒙您的邀请，我觉得很荣幸。
+The **dolphin** is an intelligent animal. 海豚是聪明的动物。
 
-You might even deem it as extreme. 你可能认为这是在走极端。
+The **dolphin** has evolved a highly developed jaw. 海豚已经进化形成高度发达的下颌。
 
+The story describes the extraordinary encounter between a man and a **dolphin**. 这个故事描述了一个男人与一只海豚之间的奇遇。
 
+ 
+
+ 
 
 ------
 
+ 
 
+ 
 
-**solid**
+**deliberate**
 
-> 释义
+英 / dɪˈlɪbərət / 美 / dɪˈlɪbərət /
 
-adj.	坚硬的；固体的，固态的；结实的，牢固的；实心的，无空隙的；纯的，无杂质的；纯色的，单色的；可信赖的，切实的；可靠的，靠得住的；忠实的，坚定的；一致的，团结的；（时间）没有间断的，连续的；（成就或工作）相当好的，经得起时间考验的；立体的，立方的；（人）高大结实的；（排版）密排的；（线路）无间断的，畅通的；&lt;美，非正式&gt;关系融洽的；&lt;澳新，非正式&gt;严厉的，不公平的；普通的，扎实的；&lt;英，非正式&gt;好的；&lt;英，非正式&gt;很难的
+> **释义**
 
-n.	立体图形，立方体；固体；固体食物；（液体中的）固形物
+adj. 故意的，蓄意的；从容的，小心翼翼的；深思熟虑的
 
+v. 仔细考虑，认真商讨
 
+ 
 
-> 例句
+> **例句**
 
-These chains seem fairly solid. 这些链子看着挺结实。
+This was a **deliberate** piece of misinformation. 这是一条故意提供的虚假消息。
 
-She had refused all solid food. 所有的固体食物她都不肯吃。
+Witnesses say the firing was **deliberate** and sustained. 目击者说这次射击是蓄意的，而且还持续了一段时间。
 
-His body was solid and taut. 他身体结实，肌肉发达。
+The **deliberate** cruelty of his words cut her like a knife. 他故意说的残酷无情的话对她像刀割一样。

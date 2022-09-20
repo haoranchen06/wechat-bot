@@ -8,6 +8,7 @@
 
 
 import configparser
+import os
 
 
 wechat_default_blue = "#173177"
@@ -32,7 +33,7 @@ grey = "#D3D3D3"
 dark_grey = "#A9A9A9"
 
 cp = configparser.ConfigParser()
-cp.read("configs/config.ini")
+cp.read(os.path.join(os.path.dirname(__file__), "config.ini"))
 
 bd_ak = cp["BAIDU_API"]["ak"]
 bd_sk = cp["BAIDU_API"]["sk"]
